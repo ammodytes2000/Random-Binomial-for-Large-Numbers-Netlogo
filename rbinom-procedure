@@ -1,0 +1,64 @@
+to-report gammln [xx]
+  let stp 2.50662827465
+  let x  (xx - 1.0)
+  let tmp (x + 5.5)
+  set tmp ((x + 0.5) * (ln tmp) - tmp)
+  let ser 1.0 + 76.18009173 / (x + 1.0) - 86.50532033 / (x + 2.0) + 24.01409822 / (x + 3.0) - 1.231739516 / (x + 4.0) + 0.120858003e-2 / (x + 5.0) - 0.536382e-5 / (x + 6.0)
+ report (tmp + (ln (stp * ser)))
+end
+
+
+to-report rbinom [nn pp]
+  let N1 nn
+  let P1 0
+  let nold -1
+  let pold -1
+  let gg 0
+  let t 1.0
+  let jj 0
+  let bnl 0
+  let En 0
+  let oldg 0
+  let pc 0
+  let plog 0
+  let pclog 0
+  let sq 0
+  let em 0
+  let rr 10
+  let angle 0
+  let y 0
+  ifelse(pp <= 0.5)[set P1 pp][set P1 (1 - pp)]
+   let am (N1 * P1)
+
+  if N1 < 25 [set bnl length filter [k -> k <= P1] n-values N1 [random-float 1]]
+  if N1 >= 25[
+      if am < 1[
+               set gg exp(- am)
+               set t 1.0
+               set jj -1
+                while[(t >= gg) And (jj < N1)][set jj (jj + 1) set t (t * random-float 1)]
+                set bnl jj
+       ]
+       if am >= 1[
+                  if N1 != nold [set En N1 set oldg gammln (En + 1) set nold N1]
+                  if P1 != pold [set pc (1 - P1) set plog (ln P1) set pclog (ln pc) set pold P1]
+                  set sq (sqrt ( 2.0 * am * pc))
+                  while[rr > t]
+                       [
+                       set em -1
+                       while[(em < 0.00) Or (em >= (En + 1.0))]
+                            [set angle ((random-float 1)  * 180)
+                             set y tan (angle)
+                             set em (sq * y + am)
+                            ]
+                        set em floor em
+                        set t (1.2 * sq * (1 + (y ^ 2)) * exp (oldg - (gammln (em + 1)) - (gammln (En - em + 1)) + em * plog + (En - em) * pclog ))
+                        set rr random-float 1
+                       ]  ;;first while
+                   set bnl em
+                ]
+      ]
+
+  if (P1 != pp)[set bnl (N1 - bnl)]
+    report bnl
+end
